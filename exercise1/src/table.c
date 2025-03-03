@@ -32,8 +32,9 @@ void fillTable() {
     // Accept the statement "go"
     table[START]['g'] = 1;
     table[1]['o'] = 2;
+    table[2][' '] = 3;
+    table[3]['g'] = 1;
     table[2]['\n'] = ACCEPT;
-
 
     // TODO Expand the table to pass (and fail) the described syntax
     // table[...][...] = ...
