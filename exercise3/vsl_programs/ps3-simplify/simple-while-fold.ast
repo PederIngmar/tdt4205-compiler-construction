@@ -1,0 +1,60 @@
+LIST
+ FUNCTION
+  IDENTIFIER (main)
+  LIST
+  BLOCK
+   LIST
+    BLOCK
+     LIST
+      LIST
+       IDENTIFIER (a)
+     LIST
+      ASSIGNMENT_STATEMENT
+       IDENTIFIER (a)
+       NUMBER_LITERAL (10)
+      WHILE_STATEMENT
+       NUMBER_LITERAL (0)
+       BLOCK
+        LIST
+         LIST
+          IDENTIFIER (x)
+        LIST
+         ASSIGNMENT_STATEMENT
+          IDENTIFIER (x)
+          NUMBER_LITERAL (5)
+         PRINT_STATEMENT
+          LIST
+           STRING_LITERAL ("Unreachable!")
+           IDENTIFIER (x)
+      WHILE_STATEMENT
+       OPERATOR (>)
+        IDENTIFIER (a)
+        NUMBER_LITERAL (5)
+       BLOCK
+        LIST
+         ASSIGNMENT_STATEMENT
+          IDENTIFIER (a)
+          OPERATOR (-)
+           IDENTIFIER (a)
+           NUMBER_LITERAL (1)
+         PRINT_STATEMENT
+          LIST
+           STRING_LITERAL ("a is now:")
+           IDENTIFIER (a)
+      WHILE_STATEMENT
+       NUMBER_LITERAL (1)
+       BLOCK
+        LIST
+         PRINT_STATEMENT
+          LIST
+           STRING_LITERAL ("Runs exactly once")
+         ASSIGNMENT_STATEMENT
+          IDENTIFIER (a)
+          OPERATOR (+)
+           IDENTIFIER (a)
+           NUMBER_LITERAL (20)
+         BREAK_STATEMENT
+      RETURN_STATEMENT
+       IDENTIFIER (a)
+    RETURN_STATEMENT
+     NUMBER_LITERAL (0)

@@ -19,6 +19,7 @@ node_t* node_create(node_type_t type, size_t n_children, ...)
       .type = type,
       .n_children = n_children,
       .children = malloc(n_children * sizeof(node_t*)),
+      .symbol = NULL,
   };
 
   // Read each child node from the va_list
@@ -148,6 +149,12 @@ static void node_print(node_t* node, int nesting)
     break;
   }
 
+  // If the node is a reference to a symbol, print its type and number
+  if (node->symbol)
+  {
+    printf(" %s(%zu)", SYMBOL_TYPE_NAMES[node->symbol->type], node->symbol->sequence_number);
+  }
+
   putchar('\n');
 
   // Recursively print children, with some more indentation
@@ -167,47 +174,45 @@ static node_t* constant_fold_operator(node_t* node)
 
   const char* op = node->data.operator;
 
+  // This is where we store the result of the constant fold
   int64_t result;
 
-  if (node->n_children == 1) {
-    if (strcmp(op, "-") == 0) {
-        result = -node->children[0]->data.number_literal;
-    } else if (strcmp(op, "!") == 0) {
-        result = !node->children[0]->data.number_literal;
-    } else {
-        return node;
-    }
-  } else if (node->n_children == 2) {
-    int64_t a = node->children[0]->data.number_literal;
-    int64_t b = node->children[1]->data.number_literal;
-
-    if (strcmp(op, "+") == 0) {
-        result = a + b;
-    } else if (strcmp(op, "-") == 0) {
-        result = a - b;
-    } else if (strcmp(op, "*") == 0) {
-        result = a * b;
-    } else if (strcmp(op, "/") == 0) {
-        if (b == 0) {
-            fprintf(stderr, "Division by zero\n");
-            exit(1);
-        }
-        result = a / b;
-    } else if (strcmp(op, "==") == 0) {
-        result = a == b;
-    } else if (strcmp(op, "!=") == 0) {
-        result = a != b;
-    } else if (strcmp(op, "<") == 0) {
-        result = a < b;
-    } else if (strcmp(op, "<=") == 0) {
-        result = a <= b;
-    } else if (strcmp(op, ">") == 0) {
-        result = a > b;
-    } else if (strcmp(op, ">=") == 0) {
-        result = a >= b;
-    } else {
-        return node;
-    }
+  if (node->n_children == 1)
+  {
+    int64_t operand = node->children[0]->data.number_literal;
+    if (strcmp(op, "-") == 0)
+      result = -operand;
+    else if (strcmp(op, "!") == 0)
+      result = !operand;
+    else
+      assert(false && "Unknown unary operator");
+  }
+  else if (node->n_children == 2)
+  {
+    int64_t lhs = node->children[0]->data.number_literal;
+    int64_t rhs = node->children[1]->data.number_literal;
+    if (strcmp(op, "==") == 0)
+      result = lhs == rhs;
+    else if (strcmp(op, "!=") == 0)
+      result = lhs != rhs;
+    else if (strcmp(op, "<") == 0)
+      result = lhs < rhs;
+    else if (strcmp(op, "<=") == 0)
+      result = lhs <= rhs;
+    else if (strcmp(op, ">") == 0)
+      result = lhs > rhs;
+    else if (strcmp(op, ">=") == 0)
+      result = lhs >= rhs;
+    else if (strcmp(op, "+") == 0)
+      result = lhs + rhs;
+    else if (strcmp(op, "-") == 0)
+      result = lhs - rhs;
+    else if (strcmp(op, "*") == 0)
+      result = lhs * rhs;
+    else if (strcmp(op, "/") == 0)
+      result = lhs / rhs;
+    else
+      assert(false && "Unknown unary operator");
   }
 
   // Free all children, turn the node into a NUMBER_LITERAL
@@ -216,30 +221,7 @@ static node_t* constant_fold_operator(node_t* node)
 
   node->type = NUMBER_LITERAL;
   node->data.number_literal = result;
-  node->n_children = 0;  
-
-  /*
-   * TODO: 2.2 Implement constant folding of OPERATOR nodes.
-   *
-   * This is the most classic form of constant folding.
-   * When all operands of an operator are know at compile time, such as 4 + 20,
-   * the calculation can be performed at compile time, and the whole expression can be replaced
-   * by 24.
-   *
-   * In our compiler, a value is known at compile time if it is a NUMBER_LITERAL node.
-   * If all children of an OPERATOR node have this type, we can perform the operation on the
-   * numbers. The OPERATOR node can then be replaced with a NUMBER_LITERAL node holding the result
-   * as its data.
-   *
-   * Remember:
-   *  - the values of NUMBER_LITERALs are stored in number_node->data.number_literal.
-   *  - the operator of an OPERATOR node is stored in the field node->data.operator, and is a
-   * string.
-   *
-   * Checking if a string is equal to another string can be done using strcmp(str1, str2), which
-   * returns 0 if the strings are identical.
-   */
-
+  node->n_children = 0;
   return node;
 }
 
@@ -249,29 +231,28 @@ static node_t* constant_fold_if(node_t* node)
 {
   assert(node->type == IF_STATEMENT);
 
-  /*
-   * TODO: 2.3 Implement "constant folding" on if statements
-   *
-   * The first child of an IF_STATEMENT node is its condition.
-   * If the condition node has type NUMBER_LITERAL, then we already know whether the if is going to
-   * be taken or not:
-   *  - 0 means not taken
-   *  - any other value means taken
-   *
-   * If we know that the if will be taken, we can remove the IF_STATEMENT from the program.
-   * Instead we return the node that contains its then-body (the IF_STATEMENT node's second child).
-   *
-   * Likewise, if the know that the if will not be taken, we can replace the entire IF_STATEMENT
-   * with its else-body. Not all IFs have an else body, so check that the IF_STATEMENT node has 3
-   * children first. If the IF_STATEMENT is never taken, but it does not have an else-body, you can
-   * return NULL.
-   *
-   * Be very careful about cleaning up any parts of the tree that are no longer used.
-   * The easiest way of doing this is to "detach" any part you want to keep,
-   * and then sending the rest of the IF_STATEMENT node to destroy_subtree.
-   */
+  if (node->children[0]->type != NUMBER_LITERAL)
+    return node;
+  bool condition = node->children[0]->data.number_literal;
 
-  return node;
+  // Detatch the node we want to return from the IF_STATEMENT-node
+  node_t* result = NULL;
+
+  if (condition)
+  {
+    result = node->children[1];
+    node->children[1] = NULL;
+  }
+  else if (node->n_children == 3)
+  {
+    result = node->children[2];
+    node->children[2] = NULL;
+  }
+  // If condition is false and the if has no else-body, we just let result be NULL
+
+  // Destory everything that is still attached to the IF_STATEMENT-node
+  destroy_subtree(node);
+  return result;
 }
 
 // If the condition of the given while node is a NUMBER_LITERAL, and it is false (0),
@@ -281,16 +262,15 @@ static node_t* constant_fold_while(node_t* node)
 {
   assert(node->type == WHILE_STATEMENT);
 
-  /*
-   * TODO: 2.4 Implement "constant folding" on while statements
-   *
-   * Just like with IF_STATEMENTS, the first child of a WHILE_STATEMENT is the condition.
-   *
-   * If the condition is a NUMBER_LITERAL holding a constant value 0, we know that the while is
-   * never taken, and it is safe to replace the whole WHILE_STATEMENT subtree with NULL.
-   */
+  if (node->children[0]->type != NUMBER_LITERAL)
+    return node;
 
-  return node;
+  bool condition = node->children[0]->data.number_literal;
+  if (condition)
+    return node;
+
+  destroy_subtree(node);
+  return NULL;
 }
 
 // Does constant folding on the subtreee rooted at the given node.
@@ -301,11 +281,10 @@ static node_t* constant_fold_subtree(node_t* node)
   if (node == NULL)
     return node;
 
-  // Recursively constant fold all children
+  // First do constant folding on all child nodes
   for (size_t i = 0; i < node->n_children; i++)
     node->children[i] = constant_fold_subtree(node->children[i]);
-  
-  // Perform constant folding on the current node
+
   switch (node->type)
   {
   case OPERATOR:
@@ -315,25 +294,8 @@ static node_t* constant_fold_subtree(node_t* node)
   case WHILE_STATEMENT:
     return constant_fold_while(node);
   default:
-    break;
+    return node;
   }
-
-  /*
-   * TODO: 2.1 Implement constant folding of subtrees.
-   * This function should recursively perform constant folding on the subtree rooted at node.
-   * Constant folding works in a bottom-up manner, so handle subtrees first.
-   *
-   * Once all subtrees are handled, check if the current node is a possible candidate for contant
-   * folding. If it is, hand it over to one of the three constant_fold_X functions above.
-   *
-   * Note that this function returns the new root of the constant folded subtree.
-   * In most cases the root node is just node, but you are free to return a new node if you want to
-   * replace a subtree. Just remember that any node that becomes detached from the tree, will not be
-   * reached during regular tree cleanup. Therefore it is your responsibility to clean up any such
-   * nodes to reclaim their memory.
-   */
-
-  return node;
 }
 
 // Operates on the statement given as node, and any sub-statements it may have.
@@ -380,18 +342,24 @@ static bool remove_unreachable_code(node_t* node)
     // The list of statements in a BLOCK is always the last child node
     node_t* statement_list = node->children[node->n_children - 1];
 
-    /*
-     * TODO 2.5: Implement unreachable code elimination
-     *
-     * A BLOCK node consists of a list of statements.
-     * For each statement S, do a recursive call to remove_unreachable_code( S ).
-     * If the call returns true, that means the statement S is guaranteed to abort the rest of the
-     * block. This can for example be due to a RETURN_STATEMENT or a BREAK_STATEMENT. If that
-     * happens, we know that the rest of the BLOCK is unreachable code. Remove all children of the
-     * statement LIST that come after S by changing n_children. Make sure you clean up all nodes
-     * that become detached from the LIST. Finally, return true, as the BLOCK contains a statement
-     * that interrupts regular execution.
-     */
+    for (size_t i = 0; i < statement_list->n_children; i++)
+    {
+      node_t* child_statement = statement_list->children[i];
+      bool interrupting = remove_unreachable_code(child_statement);
+
+      // If we have an interrupting statement, the rest of the statement list should be freed
+      if (interrupting)
+      {
+
+        // free all statements that come after i
+        for (size_t j = i + 1; j < statement_list->n_children; j++)
+          destroy_subtree(statement_list->children[j]);
+
+        // Truncate the list of statements
+        statement_list->n_children = i + 1;
+        return true;
+      }
+    }
 
     // If we get here, none of the statements in the block are interrupting.
     return false;

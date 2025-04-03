@@ -1,0 +1,24 @@
+LIST
+ FUNCTION
+  IDENTIFIER (main)
+  LIST
+  BLOCK
+   LIST
+    BLOCK
+     LIST
+      LIST
+       IDENTIFIER (x)
+     LIST
+      ASSIGNMENT_STATEMENT
+       IDENTIFIER (x)
+       NUMBER_LITERAL (5)
+      RETURN_STATEMENT
+       IDENTIFIER (x)
+      PRINT_STATEMENT
+       LIST
+        STRING_LITERAL ("Unreachable!")
+      PRINT_STATEMENT
+       LIST
+        STRING_LITERAL ("Never executed!")
+    RETURN_STATEMENT
+     NUMBER_LITERAL (0)

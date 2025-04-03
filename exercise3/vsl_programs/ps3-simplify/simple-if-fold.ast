@@ -1,0 +1,44 @@
+LIST
+ FUNCTION
+  IDENTIFIER (main)
+  LIST
+   IDENTIFIER (a)
+  BLOCK
+   LIST
+    BLOCK
+     LIST
+      IF_STATEMENT
+       NUMBER_LITERAL (0)
+       PRINT_STATEMENT
+        LIST
+         STRING_LITERAL ("Unreachable!")
+      IF_STATEMENT
+       NUMBER_LITERAL (1)
+       PRINT_STATEMENT
+        LIST
+         STRING_LITERAL ("Hello,")
+      IF_STATEMENT
+       NUMBER_LITERAL (1)
+       BLOCK
+        LIST
+         PRINT_STATEMENT
+          LIST
+           STRING_LITERAL ("World!")
+       BLOCK
+        LIST
+         PRINT_STATEMENT
+          LIST
+           STRING_LITERAL ("Unreachable!")
+      IF_STATEMENT
+       OPERATOR (>)
+        IDENTIFIER (a)
+        NUMBER_LITERAL (10)
+       BLOCK
+        LIST
+         PRINT_STATEMENT
+          LIST
+           STRING_LITERAL ("Maybe")
+      RETURN_STATEMENT
+       NUMBER_LITERAL (0)
+    RETURN_STATEMENT
+     NUMBER_LITERAL (0)
