@@ -17,6 +17,12 @@ static void generate_expression(node_t* expression);
 static void generate_statement(node_t* node);
 static void generate_main(symbol_t* first);
 
+
+static int if_counter = 0;
+static int while_counter = 0;
+static int while_loops[200];
+static int innermost_while = -1;
+
 // Entry point for code generation
 void generate_program(void)
 {
@@ -436,28 +442,51 @@ static void generate_return_statement(node_t* statement)
 
 static void generate_if_statement(node_t* statement)
 {
-  // TODO (2.1):
-  // Generate code for emitting both if-then statements, and if-then-else statements.
-  // Check the number of children to determine which.
+  if_counter++;
+  int current_if = if_counter;
+  assert(statement->n_children == 2 || statement->n_children == 3);
 
-  // You will need to define your own unique labels for this if statement,
-  // so consider using a global variable as a counter to give each label a suffix unique to this if.
+  generate_expression(statement->children[0]);
+  CMPQ("$0", RAX);
+
+  if (statement->n_children == 2){
+    EMIT("je ENDIF%d", current_if);
+    generate_statement(statement->children[1]);
+  }
+  else{
+    EMIT("je ELSE%d", current_if);
+    generate_statement(statement->children[1]);
+    EMIT("jmp ENDIF%d", current_if);
+    LABEL("ELSE%d", current_if);
+    generate_statement(statement->children[2]);
+  }
+  LABEL("ENDIF%d", current_if);
 }
 
 static void generate_while_statement(node_t* statement)
 {
-  // TODO (2.2):
-  // Implement while loops, similarily to the way if statements were generated.
-  // Remember to make label names unique, and to handle nested while loops.
+  while_counter++;
+  int current_while = while_counter;
+  innermost_while++;
+  while_loops[innermost_while] = current_while;
+  assert(statement->n_children == 2);
+
+  LABEL("WHILE%d", current_while);
+  generate_expression(statement->children[0]);
+  CMPQ("$0", RAX);
+  EMIT("je ENDWHILE%d", current_while);
+  generate_statement(statement->children[1]);
+  EMIT("jmp WHILE%d", current_while);
+  LABEL("ENDWHILE%d", current_while);
+
+  innermost_while--;
 }
 
 // Leaves the currently innermost while loop using its end-label
 static void generate_break_statement()
 {
-  // TODO (2.3):
-  // Generate the break statement, jumping out past the end of the current innermost while loop.
-  // You can use a global variable to keep track of the current innermost call to
-  // generate_while_statement().
+  int breakpoint = while_loops[innermost_while];
+  EMIT("jmp ENDWHILE%d", breakpoint);
 }
 
 // Recursively generate the given statement node, and all sub-statements.

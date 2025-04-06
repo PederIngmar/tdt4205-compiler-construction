@@ -65,6 +65,7 @@
   EMIT("movzbq %s, %s", (byte_reg), (full_reg)) // full_reg <- byte_reg
 
 #define JNE(label) EMIT("jne %s", (label)) // Conditional jump (not equal)
+#define JE(label) EMIT("je %s", (label)) // Conditional jump (equal)
 #define JMP(label) EMIT("jmp %s", (label)) // Unconditional jump
 
 // Bitwise and
